@@ -22,7 +22,7 @@ module.exports = function(){
             //得到群详情
             var sql1 = 'SELECT a.name, u.user_name AS creator_name, a.creator_no, \
                         a.duty, a.introduction, a.create_time\
-                        FROM association AS a, user_info AS u WHERE association_n = ?\
+                        FROM association AS a, user_info AS u WHERE association_no = ?\
                         AND a.creator_no = u.user_no';
             var values1 = [association_no];
             responseData.info = await db.query(sql1, values1);

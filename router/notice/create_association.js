@@ -1,6 +1,6 @@
 const express = require('express');
 const async = require('async');
-const db = require('./model/query');
+const db = require('../../model/query');
 
 var responseData;
 

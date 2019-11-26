@@ -101,7 +101,7 @@ module.exports = function(){
 		var values = [title, course, content, publish_time, end_time, homework_no];
 		await db.query(sql, values);
 
-		responseData.code = '0003'；
+		responseData.code = '0003';
 		responseData.message = '编辑作业成功';
 
         console.log(responseData);

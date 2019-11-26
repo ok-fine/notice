@@ -1,5 +1,6 @@
 const express = require('express');
 const db = require('../../model/query');
+const bodyParser = require('body-parser');
 const async = require('async');
 const join = require('path').join;
 const pathLib = require('path');
@@ -43,11 +44,13 @@ module.exports = function(){
         var association_no = req.query.association_no;
         var notice_power = req.query.notice_power;
         var homework_power = req.query.homework_power;
+        responseData.data = [];
 
         //获取总人数
         var sql = 'SELECT COUNT(*) AS all_people FROM members \
                     WHERE association_no = ? AND status = \'已通过\'';        
         var values = [association_no];
+        var people = [];
         people.push(await db.query(sql, values));
 
         //展示通知
@@ -66,14 +69,13 @@ module.exports = function(){
             var adminNo = [admin_no];
             var allAdmin = getAllAdmin(result, adminNo);
             allAdmin.push(admin_no);
-            responseData.data = [];
             for(var i = 0; i < allAdmin.length; i++){
                 //获取通知信息, 发布者姓名
                 var sql2 = 'SELECT n.*, u.user_name AS creator_name\
                             FROM notices AS n, user_info AS u\
                             WHERE n.creator_no=? AND n.association_no = ? AND n.creator_no = u.user_no \
                             ORDER BY n.publish_time';
-                var values2 = [values[i], association_no];
+                var values2 = [allAdmin[i], association_no];
                 result = await db.query(sql2, values2);
 
                 //通知数据
@@ -96,7 +98,7 @@ module.exports = function(){
                     //未读人数
                     result = await db.query(sql3, values3);
                     var notRead = JSON.stringify(result[0]);
-                    notRead = JSON.parse(not_read);
+                    notRead = JSON.parse(notRead);
                     notices.data[j].notRead = notRead.not_read;
                     //已完成人数
                     result = await db.query(sql4, values3);
@@ -129,15 +131,14 @@ module.exports = function(){
             var adminNo = [admin_no];
             var allAdmin = getAllAdmin(result, adminNo);
             allAdmin.push(admin_no);
-            responseData.data = [];
             for(var i = 0; i < allAdmin.length; i++){
                 //获取作业信息, 以及发布者姓名
                 var sql2 = 'SELECT h.*, u.user_name AS creator_name \
                             FROM homeworks AS h, user_info AS u \
                             WHERE h.creator_no=? AND h.association_no=? AND h.creator_no=u.user_no \
                             ORDER BY h.publish_time';
-                var values2 = [values[i], association_no];
-                result = await db.query(sql1, values2);
+                var values2 = [allAdmin[i], association_no];
+                result = await db.query(sql2, values2);
 
                 //作业数据
                 var homeworks = {
@@ -257,307 +258,6 @@ module.exports = function(){
         res.json(responseData);
     })
 
-    //编辑作业
-    //首先获取作业信息
-    //然后判断是否存在, 原本不存在, 现在需要创建
-    //在创建中如要更换作业提交方式, 删除原有内容
-    //如果原本存在，现在不需要则需要删除文件以及删除文件夹
-    //最后更新数据库
-    router.post('/edit_homework', async function(req, res){
-        var homework_no = req.body.homework_no;
-        var association_no = req.body.association_no;
-        var creator_no = req.body.creator_no;
-        var course = req.body.course;
-        var title = req.body.title;
-        var content = req.body.content;
-        var publish_time = req.body.publish_time;
-        var end_time = req.body.end_time;
-        var img_count = req.body.img_count;
-        var file_count = req.body.file_count;
-        var get_file = req.body.get_file;
-        var method = req.body.method;
-        var old_method = req.body.old_method;
-        var named = req.body.named;
-        var img_count = req.body.img_count;
-        var hold = req.body.hold_img;
-        var del = req.body.del_img;
-
-        if(hold == 'undefined'){
-            var holdImg = [];
-        }else{
-            var holdImg = hold.split(" "); 
-        }
-
-        if(del == 'undefined'){
-            var delImg = [];
-        }else{
-            var delImg = del.split(" ");
-        }
-        //读取作业信息
-        var sql = 'SELECT * FROM homeworks WHERE homework_no = ?';
-        var values = [homework_no];
-        var result = await db.query(sql, values);
-        if(result.length == 0){
-            responseData.code = '0001';
-            responseData.message = '条目不存在,请刷新';
-        }else{
-            var fileName = '/home/ubuntu/hutao/notice/files/' + association_no 
-                            + '/homeworks/' + homework_no + '/collect/';  
-            //判断文件是否存在，是否需要创建或删除     
-            if (!fs.existsSync(fileName) && get_file == 1){
-                fs.mkdir(fileName, function(err){
-                    if(err){
-                        responseData.code = '0001';
-                        responseData.message = '创建文件夹失败';
-                        //console.log(responseData);
-                        res.json(responseData);
-                    }
-                });
-                if(method != old_method){
-                    deleteFolderFile(fileName);
-                }
-            }else if(fs.existsSync(fileName) && get_file == 0){
-                deleteFolderFile(fileName);
-                fs.rmdirSync(fileName, function(err){
-                    if(err){
-                        responseData.code = '0001';
-                        responseData.message = '删除文件夹失败';
-                        //console.log(responseData);
-                        res.json(responseData);
-                    }
-                });
-                method = '图片';                                         
-            }
-            //删除图片
-            //将现有的图片按顺序重命名
-            //路径不一样时才需要重命名
-            for(var i = 0 ; i < delImg.length ; i++){
-                var path = del_img[i].substr(delImg[i].length - 9, 9);
-                var delPath = '/home/ubuntu/hutao/notice/files/'+ association_no 
-                                + '/homeworks/' + homework_no + '/publish/' + path;
-                //console.log("del_path" + delPath);
-                fs.unlinkSync(delPath);
-            }
-
-            for(var i = 1 ; i <= hold_img.length ; i++){
-                var path = hold_img[i - 1].substr(hold_img[i - 1].length - 9, 9);
-                var oldImgPath = '/home/ubuntu/hutao/notice/files/'+ association_no 
-                                    + '/homeworks/' + homework_no + '/publish/' +  path;
-                // console.log("old_img_path:" + old_img_path);
-                var newImgPath = '/home/ubuntu/hutao/notice/files/'+ association_no 
-                                    + '/homeworks/' + homework_no + '/publish/' + i + path.substr(1,3);
-                if(newImgPath != oldImgPath){
-                    fs.rename(oldImgPath, newImgPath, function(err){
-                        if(err){
-                            console.log(err);
-                            responseData.code = '0030';
-                            responseData.message = '图片重命名失败';
-                            res.json(responseData);
-                            throw err;
-                        }
-                    });
-                }
-            }
-            //更改作业文字信息
-            var sql1 = 'UPDATE homeworks SET creator_no = ?, course = ?, title = ?, \
-                        content = ?, publish_time = ?, end_time = ?, img_count = ?, \
-                        file_count = ?, get_file = ?, method = ?, named = ? \
-                        WHERE homework_no = ?';
-            var values1 = [creator_no, course, title, content, publish_time, end_time, 
-                        img_count, file_count, get_file, method, named, homework_no];
-            await db.query(sql1, values1);      
-            //更改人员展示信息
-            var sql2 = 'UPDATE user_homeworks SET modify = \'1\' \
-                    WHERE is_personal = \'0\' AND homework_no = ?';
-            var values2 = [homework_no];
-            await db.query(sql2, values2);
-
-            responseData.code = '0000';
-            responseData.message = '数据更新完成';
-        }
-
-        res.json(responseData);
-    })
-
-    //编辑通知
-    //首先获取通知信息
-    //然后判断是否存在, 原本不存在, 现在需要创建
-    //在创建中如要更换作业提交方式, 删除原有内容
-    //如果原本存在，现在不需要则需要删除文件以及删除文件夹
-    //最后更新数据库
-    router.post('/edit_notice', async function(req, res){
-        var notice_no = req.body.notice_no;
-        var association_no = req.body.association_no;
-        var creator_no = req.body.creator_no;
-        var title = req.body.title;
-        var content = req.body.content;
-        var publish_time = req.body.publish_time;
-        var end_time = req.body.end_time;
-        var img_count = req.body.img_count;
-        var file_count = req.body.file_count;
-        var get_file = req.body.get_file;
-        var method = req.body.method;
-        var old_method = req.query.old_method;
-        var named = req.body.named;
-        //读取通知信息
-        var sql = 'SELECT * FROM notices WHERE notice_no=?';
-        var values = [notice_no];
-        var result = await db.query(sql, values);
-
-        if(result.length == 0){
-            responseData.code = '0001';
-            responseData.message = '条目不存在,请刷新';
-        }else{
-            var fileName = '/home/ubuntu/hutao/notice/files/' + association_no 
-                            + '/notices/' + notice_no + '/collect/';
-            //判断文件是否存在，是否需要创建或删除
-            if (!fs.existsSync(fileName) && get_file == 1){
-                fs.mkdir(fileName,function(err){
-                    if(err){
-                        responseData.code = '0001';
-                        responseData.message = '创建文件夹失败';
-                        console.log(responseData);
-                        res.json(responseData);
-                    }
-                });
-                if(method != old_method){
-                    deleteFolderFile(fileName);
-                }
-            }else if(fs.existsSync(fileName) && get_file == 0){
-                deleteFolderFile(fileName);
-                fs.rmdirSync(fileName, function(err){
-                    if(err){
-                        responseData.code = '0001';
-                        responseData.message = '删除文件夹失败';
-                        console.log(responseData);
-                        res.json(responseData);
-                    }
-                });
-                method = '图片';                                         
-            }
-            //更新通知信息
-            var sql1 = 'UPDATE notcies SET creator_no = ?, title = ?, content = ?, \
-                        publish_time = ?, end_time = ?, img_count = ?, file_count = ?,\
-                        get_file = ?, method = ?, named = ? \
-                        WHERE notice_no = ?'
-            var values1 = [creator_no, title, content, publish_time, end_time, 
-                        img_count, file_count, get_file, method, named, notice_no];
-            await db.query(sql1, values1);
-            //更改人员展示信息
-            var sql2 = 'UPDATE user_notices SET modify = \'1\' \
-                        WHERE is_personal = \'0\' AND notice_no = ?';
-            values2 = [notice_no];
-            await db.query(sql2, values2);
-
-            responseData.code = '0000';
-            responseData.message = '数据更新完成';
-        }
-
-        res.json(responseData);
-    })
-
-    //更改通知文件图片信息
-    //判断是否是图片, 不是则需要文件原名,是则需要图片ID
-    //插入图片和文件, 并重命名
-    router.post('/edit_noticefile', async function(req, res){
-        var form = new formidable.IncomingForm();
-        var fileDir = pathLib.join(__dirname, '../../files');
-        form.uploadDir = fileDir;
-        form.keepExtensions = true;
-        
-        form.parse(req, async function(err, fields, files){
-            var notice_no = fields['notice_no'];
-            var association_no = fields['association_no'];
-            var is_pic = fields['is_pic'];
-            var ori_name = fields['ori_name'];
-            var count = fields['count'];
-            var file_path = '/home/ubuntu/hutao/notice/files/' + association_no 
-                            + '/notices/' + notice_no + '/publish/';
-            //判断是否是图片
-            if(is_pic == 1){
-                var imgNewName = file_path + '\/'  + count + '_img' 
-                                + pathLib.parse(files.f1.path).ext;
-                fs.rename(files.f1.path, imgNewName, function(err){
-                    if(err){
-                        console.log(err);
-                        responseData.code = '0001';
-                        responseData.message = '图片上传失败';
-                        throw err;
-                    }
-                })
-                responseData.code = '0000';
-                responseData.message = '图片' + count + '上传成功';
-                responseData.data = association_no;
-            }else{
-                var fileNewName = file_path + '\/' + ori_name;
-                fs.rename(files.f1.path, fileNewName, function(err){
-                    if(err){
-                        console.log(err);
-                        responseData.code = '0001';
-                        responseData.message = '文件上传失败';
-                        throw err;
-                    }
-                })
-                responseData.code = '0000';
-                responseData.message = '文件' + count + '上传成功';
-                responseData.data = association_no;
-            }
-
-            res.json(responseData);
-        });
-    });
-
-    //更改作业文件图片信息
-    //判断是否是图片, 不是则需要文件原名,是则需要图片ID
-    //插入图片和文件, 并重命名
-    router.post('/edit_homeworkfile', async function(req, res){
-        var form = new formidable.IncomingForm();
-        var fileDir = pathLib.join(__dirname, '../../files');
-        form.uploadDir = fileDir;
-        form.keepExtensions = true;
-        
-        form.parse(req, async function(err, fields, files){
-            var homework_no = fields['homework_no'];
-            var association_no = fields['association_no'];
-            var is_pic = fields['is_pic'];
-            var ori_name = fields['ori_name'];
-            var count = fields['count'];
-            var file_path = '/home/ubuntu/hutao/notice/files/' + association_no 
-                            + '/homeworks/' + homework_no + '/publish/';
-
-            if(is_pic == 1){
-                var imgNewName = file_path + '\/'  + count + '_img' 
-                                + pathLib.parse(files.f1.path).ext;
-                fs.rename(files.f1.path, imgNewName, function(err){
-                    if(err){
-                        console.log(err);
-                        responseData.code = '0001';
-                        responseData.message = '图片上传失败';
-                        throw err;
-                    }
-                })
-                responseData.code = '0000';
-                responseData.message = '图片' + count + '上传成功';
-                responseData.data = association_no;
-            }else{
-                var fileNewName = file_path + '\/' + ori_name;
-                fs.rename(files.f1.path, fileNewName, function(err){
-                    if(err){
-                        console.log(err);
-                        responseData.code = '0001';
-                        responseData.message = '文件上传失败';
-                        throw err;
-                    }
-                })
-                responseData.code = '0000';
-                responseData.message = '文件' + count + '上传成功';
-                responseData.data = association_no;
-            }
-
-            res.json(responseData);
-        });
-    });
-
     //通知、作业加急
     router.get('/hurry', async function(req, res){
         var notice_power = req.query.notice_power;
@@ -574,7 +274,7 @@ module.exports = function(){
             await db.query(sql, values);
 
             responseData.code = '0000';
-            responseData.message = '通知加急成功';
+            responseData.message = '作业加急成功';
         }else if(notice_power == 1){
             //更新用户状态(通知)
             sql = 'UPDATE user_notices SET hurry = 1 \
@@ -583,7 +283,7 @@ module.exports = function(){
             await db.query(sql, values);
 
             responseData.code = '0000';
-            responseData.message = '作业加急成功';
+            responseData.message = '通知加急成功';
         }
         res.json(responseData);
     })
@@ -596,7 +296,7 @@ module.exports = function(){
         var homework_power = req.query.homework_power;
 
         var sql;
-        var values = [association_no, no];;
+        var values = [association_no, no];
         var result;
         if(notice_power == 1){
             //读取数据
@@ -608,7 +308,7 @@ module.exports = function(){
                 responseData.message = '条目已不存在，请刷新';
             }else{
                 //删除选中的通知信息
-                var sql1 = 'DELECT FROM notices WHERE association_no = ? AND notice_no = ?';
+                var sql1 = 'DELETE FROM notices WHERE association_no = ? AND notice_no = ?';
                 await db.query(sql1, values);
 
                 var filename = '/home/ubuntu/hutao/notice/files/' + association_no 
@@ -638,7 +338,7 @@ module.exports = function(){
                 responseData.message = '条目已不存在，请刷新';
             }else{
                 //删除选中的作业信息
-                var sql1 = 'DELECT FROM homeworks WHERE association_no = ? AND homework_no = ?';
+                var sql1 = 'DELETE FROM homeworks WHERE association_no = ? AND homework_no = ?';
                 await db.query(sql1, values);
                 var filename = '/home/ubuntu/hutao/notice/files/' + association_no 
                                 + '/homeworks/' + no + '/collect/';
