@@ -65,61 +65,86 @@ module.exports = function(){
             responseData.code = '0001';
             responseData.message = '条目不存在,请刷新';
         }else{
-            var  filePath = '/home/ubuntu/hutao/notice/files/' + association_no 
-                            + '/notices/' + notice_no + '/collect/';
+            var filePath = '/home/ubuntu/notice/files/' + association_no 
+                            + '/notices/' + notice_no;
             //判断文件是否存在，是否需要创建或删除
+            if (!fs.existsSync(filePath) && get_file == 1){
+                fs.mkdir(filePath, function(err){
+                    if(err){
+                        responseData.code = '0001';
+                        responseData.message = '创建notices文件夹失败';
+                        res.json(responseData);
+                        throw err;
+                    }
+                });
+            };
+            filePath = filePath + '/collect/';
+            //判断要求作业提交模式是否相同
+            if(fs.existsSync(filePath) && method != old_method){
+                deleteFolderFile(filePath);
+                fs.mkdir(filePath, function(err){
+                    if(err){
+                        responseData.code = '0001';
+                        responseData.message = '创建collect文件夹失败';
+                        res.json(responseData);
+                        throw err;
+                    }
+                })
+            }
             if (!fs.existsSync(filePath) && get_file == 1){
                 fs.mkdir(filePath,function(err){
                     if(err){
                         responseData.code = '0001';
-                        responseData.message = '创建文件夹失败';
-                        console.log(responseData);
+                        responseData.message = '创建collect文件夹失败';
                         res.json(responseData);
+                        throw err;
                     }
                 });
-                if(method != old_method){
-                    deleteFolderFile(filePath);
-                }
             }else if(fs.existsSync(filePath) && get_file == 0){
                 deleteFolderFile(filePath);
-                fs.rmdirSync(filePath, function(err){
-                    if(err){
-                        responseData.code = '0001';
-                        responseData.message = '删除文件夹失败';
-                        console.log(responseData);
-                        res.json(responseData);
-                    }
-                });
+                if(fs.existsSync(filePath)){
+                    responseData.code = '0001';
+                    responseData.message = '删除文件夹失败';
+                    res.json(responseData);
+                    throw new Error('删除文件夹失败');
+                }
                 method = '图片';                                         
             }
 
             //判断作业详情是否需要文件夹存放图片或文件
-            var pubPath = '/home/ubuntu/hutao/notice/files/' + association_no 
-                            + '/notices/' + notice_no + '/collect/';
+            var pubPath = '/home/ubuntu/notice/files/' + association_no 
+                            + '/notices/' + notice_no;
             //判断文件夹是否存在，是否需要创建或删除（有新图片上传才判断）
             if (!fs.existsSync(pubPath) && if_pub == 1){
                 fs.mkdir(pubPath, function(err){
                     if(err){
                         responseData.code = '0001';
-                        responseData.message = '创建文件夹失败';
-                        //console.log(responseData);
+                        responseData.message = '创建notices文件夹失败';
                         res.json(responseData);
+                        throw err;
                     }
                 });
-                if(method != old_method){
-                    deleteFolderFile(pubPath);
-                }
-            }else if(fs.existsSync(pubPath) && if_pub == 0){
-                deleteFolderFile(pubPath);
-                fs.rmdirSync(pubPath, function(err){
+            };
+            pubPath = pubPath + '/publish/';
+            if (!fs.existsSync(pubPath) && if_pub == 1){
+                fs.mkdir(pubPath, function(err){
                     if(err){
                         responseData.code = '0001';
-                        responseData.message = '删除文件夹失败';
-                        //console.log(responseData);
+                        responseData.message = '创建publish文件夹失败';
                         res.json(responseData);
+                        throw err;
                     }
                 });
-                method = '图片';                                         
+            }
+            //没有图片 没有文件 则删除publish文件夹
+            if(fs.existsSync(pubPath) && img_count == 0 && file_count == 0){
+                deleteFolderFile(pubPath);
+                if(fs.existsSync(pubPath)){
+                    responseData.code = '0001';
+                    responseData.message = '删除文件夹失败';
+                    res.json(responseData);
+                    throw new Error('删除文件夹失败');
+                }
             }
 
             //删除图片
@@ -140,7 +165,6 @@ module.exports = function(){
                 if(new_img_path != old_img_path){
                     fs.rename(old_img_path, new_img_path, function(err){
                         if(err){
-                            console.log(err);
                             responseData.code = '0030';
                             responseData.message = '图片重命名失败';
                             res.json(responseData);
@@ -150,7 +174,7 @@ module.exports = function(){
                 }
             }
 
-            //更新通知信息
+            //更新通知文字信息
             var sql1 = 'UPDATE notcies SET creator_no = ?, title = ?, content = ?, \
                         publish_time = ?, end_time = ?, img_count = ?, file_count = ?,\
                         get_file = ?, method = ?, named = ? \
@@ -186,8 +210,30 @@ module.exports = function(){
             var is_pic = fields['is_pic'];
             var ori_name = fields['ori_name'];
             var count = fields['count'];
-            var filePath = '/home/ubuntu/hutao/notice/files/' + association_no 
-                            + '/notices/' + notice_no + '/publish/';
+            var filePath = '/home/ubuntu/notice/files/' + association_no 
+                            + '/notices/' + notice_no;
+            //判断文件是否存在，是否需要创建或删除
+            if (!fs.existsSync(filePath)){
+                fs.mkdir(filePath, function(err){
+                    if(err){
+                        responseData.code = '0001';
+                        responseData.message = '创建notices文件夹失败';
+                        res.json(responseData);
+                        throw err;
+                    }
+                });
+            };
+            filePath = filePath + '/publish/';
+            if (!fs.existsSync(filePath)){
+                fs.mkdir(filePath, function(err){
+                    if(err){
+                        responseData.code = '0001';
+                        responseData.message = '创建publish文件夹失败';
+                        res.json(responseData);
+                        throw err;
+                    }
+                });
+            };
             //判断是否是图片
             if(is_pic == 1){
             	var imgExt = pathLib.parse(files.f1.path).ext;
@@ -224,3 +270,18 @@ module.exports = function(){
 
     return router;
 }
+
+//递归删除文件夹中所有文件
+function deleteFolderFile(path){
+    if(fs.existsSync(path)){
+        fs.readdirSync(path).forEach(function(file){
+            var curPath = path + "/" + file;
+            if(fs.statSync(curPath).isDirectory()){
+                deleteFolderFile(curPath);
+            }else{
+                fs.unlinkSync(curPath);
+            }
+        });
+        fs.rmdirSync(path);
+    }
+};

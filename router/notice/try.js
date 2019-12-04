@@ -32,6 +32,7 @@ module.exports = function(){
 
     router.post('/123', function(req, res){
     	console.log(123);
+        var fileDir = pathLib.join(__dirname,'../../files/');
     	var form = new formidable.IncomingForm();
         form.uploadDir = fileDir;
         form.keepExtensions = true;
@@ -41,15 +42,29 @@ module.exports = function(){
 
         	// var filePath = pathLib.parse(files.f.path).dir;
         	var oldpath = files.f.path;
-        	var extname = oldpath.extname(files.f.name);
+        	var extname = pathLib.parse(files.f.path).ext;
         	console.log(extname);
         	var newFilePath = fileDir;
-        	var newFileName = '123' + extname;
+        	var newFileName = newFilePath + re.rename('学号-姓名-第三次作业', '魏洁杨', '201711020325', 0, 12) + extname;
+            fs.rename(files.f.path, newFileName, function(err){
+                if(err){
+                    console.log(err);
+                    responseData.code = 1;
+                    responseData.message = '上传失败';
+                    // res.json(responseData);
+                    throw err;
+                }else{
+                    responseData.code = 0;
+                    responseData.message = '上传成功';
+                }
+            })
 
-        	dataToCDN(oldpath, newFilePath, newFileName).then(function(isSuccess) {
-	       		callback(isSuccess);
-	        });
+        	// dataToCDN(oldpath, newFilePath, newFileName).then(function(isSuccess) {
+	       	// 	callback(isSuccess);
+	        // });
         });
+
+        res.json(responseData);
 
     });
     

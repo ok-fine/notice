@@ -35,14 +35,14 @@ module.exports = function(){
 
         var sql1 = 'INSERT INTO association(name, creator_no, duty, introduction, \
                     create_time, create_reason, admin_no) VALUES(?, ?, ?, ?, ?, ?, ?)';
-        var values1 = [name, creator_no, duty, introduction, 
+        var values1 = [name, creator_no, duty, introduction,
                        create_time, create_reason, admin_no];
         await db.query(sql1, values1);
 
         responseData.code = '0019';
         responseData.message = '申请创建成功';
 
-        // console.log(responseData);
+        console.log(responseData);
         res.json(responseData);
     });
 

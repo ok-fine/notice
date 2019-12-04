@@ -1,11 +1,9 @@
 const express = require('express');
 const db = require('../../model/query');
-const bodyParser = require('body-parser');
 const async = require('async');
 const join = require('path').join;
 const pathLib = require('path');
 const fs = require('fs');
-const formidable = require('formidable');
 
 var responseData;
 
@@ -199,27 +197,33 @@ module.exports = function(){
             if(result.length == 0){
                 responseData.code = 1;
                 responseData.message = '条目已不存在，请刷新';
-            }else{
+            }else if(result.img_count != 0 || result.file_count != 0){
                 responseData.code = 0;
                 responseData.message = '获取通知信息成功';
                 responseData.imgUrl = [];
                 responseData.fileUrl = [];
-                var filePath = '/home/ubuntu/hutao/notice/files/' + association_no 
+                var filePath = '/home/ubuntu/notice/files/' + association_no 
                                 + '/notices/' + no + '/publish/';
-                var files = findSync(filePath);
-                for(var i = 0; i < files.length; i++){
-                    files[i] = files[i].replace('/home/ubuntu/hutao/notice',
-                                'http://132.232.81.249/');         
-                    //图片
-                    //文件
-                    if(files[i].indexOf('_img') > 0){
-                        responseData.imgUrl.push(files[i]);
-                    }else{
-                        if(files[i].indexOf('.DS_Store') < 0){
-                            responseData.fileUrl.push(files[i]);
+                if(fs.existsSync(filePath)){
+                    var files = findSync(filePath);
+                    for(var i = 0; i < files.length; i++){
+                        files[i] = files[i].replace('/home/ubuntu/notice',
+                                    'http://106.53.3.150:88/');         
+                        //图片
+                        //文件
+                        if(files[i].indexOf('_img') > 0){
+                            responseData.imgUrl.push(files[i]);
+                        }else{
+                            if(files[i].indexOf('.DS_Store') < 0){
+                                responseData.fileUrl.push(files[i]);
+                            }
                         }
-                    }
+                    }   
                 }
+                responseData.data = result;
+            }else{
+                responseData.code = '0000';
+                responseData.message = '获取通知信息成功';
                 responseData.data = result;
             }
         }else if(homework_power == 1){
@@ -231,27 +235,33 @@ module.exports = function(){
             if(result.length == 0){
                 responseData.code = '0001';
                 responseData.message = '条目已不存在，请刷新';
-            }else{
+            }else if(result.img_count != 0 || result.file_count != 0){
                 responseData.code = '0000';
                 responseData.message = '获取作业信息成功';
                 responseData.imgUrl = [];
                 responseData.fileUrl = [];
-                var filePath = '/home/ubuntu/hutao/notice/files/' + association_no 
+                var filePath = '/home/ubuntu/notice/files/' + association_no 
                                 + '/homeworks/' + no + '/publish/';
                 var files = findSync(filePath);
-                for(var i = 0; i < files.length; i++){
-                    files[i] = files[i].replace('/home/ubuntu/hutao/notice',
-                                'http://132.232.81.249/');                 
-                    //图片
-                    //文件
-                    if(files[i].indexOf('_img') > 0){
-                        responseData.imgUrl.push(files[i]);
-                    }else{
-                        if(files[i].indexOf('.DS_Store') < 0){
-                            responseData.fileUrl.push(files[i]);
+                if(fs.existsSync(filePath)){
+                    for(var i = 0; i < files.length; i++){
+                        files[i] = files[i].replace('/home/ubuntu/notice',
+                                    'http://106.53.3.150:88/');                 
+                        //图片
+                        //文件
+                        if(files[i].indexOf('_img') > 0){
+                            responseData.imgUrl.push(files[i]);
+                        }else{
+                            if(files[i].indexOf('.DS_Store') < 0){
+                                responseData.fileUrl.push(files[i]);
+                            }
                         }
                     }
                 }
+                responseData.data = result;
+            }else{
+                responseData.code = '0000';
+                responseData.message = '获取作业信息成功';
                 responseData.data = result;
             }
         }
@@ -311,18 +321,16 @@ module.exports = function(){
                 var sql1 = 'DELETE FROM notices WHERE association_no = ? AND notice_no = ?';
                 await db.query(sql1, values);
 
-                var filename = '/home/ubuntu/hutao/notice/files/' + association_no 
-                            + '/notices/' + no + '/collect/';
+                var filename = '/home/ubuntu/notice/files/' + association_no 
+                            + '/notices/' + no;
                 if(fs.existsSync(filename)){              
                     deleteFolderFile(filename);
-                    fs.rmdirSync(filename, function(err){
-                        if(err){
-                            responseData.code = '0001';
-                            responseData.message = '删除文件夹失败';
-                            console.log(responseData);
-                            res.json(responseData);
-                        }
-                    });
+                    if(fs.existsSync(filename)){
+                        responseData.code = '0001';
+                        responseData.message = '删除文件夹失败';
+                        console.log(responseData);
+                        res.json(responseData);
+                    }
                 }
                 responseData.code = '0000';
                 responseData.message = '删除成功';
@@ -340,18 +348,16 @@ module.exports = function(){
                 //删除选中的作业信息
                 var sql1 = 'DELETE FROM homeworks WHERE association_no = ? AND homework_no = ?';
                 await db.query(sql1, values);
-                var filename = '/home/ubuntu/hutao/notice/files/' + association_no 
-                                + '/homeworks/' + no + '/collect/';
+                var filename = '/home/ubuntu/notice/files/' + association_no 
+                                + '/homeworks/' + no;
                 if(fs.existsSync(filename)){        
                     deleteFolderFile(filename);
-                    fs.rmdirSync(filename, function(err){
-                        if(err){
-                            responseData.code = '0001';
-                            responseData.message = '删除文件夹失败';
-                            console.log(responseData);
-                            res.json(responseData);
-                        }
-                    });
+                    if(fs.existsSync(filename)){
+                        responseData.code = '0001';
+                        responseData.message = '删除文件夹失败';
+                        console.log(responseData);
+                        res.json(responseData);
+                    }
                 }
                 responseData.code = '0000';
                 responseData.message = '删除成功';
@@ -412,5 +418,6 @@ function deleteFolderFile(path){
                 fs.unlinkSync(curPath);
             }
         });
+        fs.rmdirSync(path);
     }
 };

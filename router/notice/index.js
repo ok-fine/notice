@@ -21,7 +21,7 @@ module.exports = function(){
     	var user_no = req.query.user_no;
 
     	//获得能发作业的群
-    	var sql = 'SELECT a.association_no, a.association_name \
+    	var sql = 'SELECT a.association_no, a.name AS association_name \
     				FROM administrators AS m, association AS a \
     				WHERE a.association_no = m.association_no \
     				AND m.admin_no = ? AND m.homework_power = 1';
@@ -29,10 +29,10 @@ module.exports = function(){
     	responseData.homework = await db.query(sql, values);
 
     	//获得能发通知的
-    	var sql1 = 'SELECT a.association_no, a.association_name \
+    	var sql1 = 'SELECT a.association_no, a.name AS association_name \
     				FROM administrators AS m, association AS a \
     				WHERE a.association_no = m.association_no \
-    				AND m.admin_no = ? AND m.notice_power = 1'
+    				AND m.admin_no = ? AND m.notice_power = 1';
     	var values1 = [user_no];
     	responseData.notice = await db.query(sql1, values1);
 
@@ -96,12 +96,14 @@ module.exports = function(){
 					ORDER BY FIELD(status, \'完成\', \'截止\'), \
 					end_time ASC';
 		var values = [user_no, now];
-		responseData.homework = await db.query(sql, values);
+		var homework = await db.query(sql, values);
+		responseData.homework = homework;
 
 		responseData.code = '0016';
 		responseData.message = '选取用户所有作业信息成功';
 
-		console.log(responseData.homework);
+		console.log("all_vh:" + values);
+		console.log("all_h:" + JSON.stringify(homework));
 		res.json(responseData);
 	});
 
@@ -118,12 +120,14 @@ module.exports = function(){
 					ORDER BY FIELD(status, \'完成\', \'截止\'), \
 					end_time ASC';
 		var values = [user_no, now];
-		responseData.notice = await db.query(sql, values); 
+		var notice = await db.query(sql, values); 
+		responseData.notice = notice;
 
 		responseData.code = '0017';
 		responseData.message = '选取用户所有通知信息成功';
-
-		console.log(responseData.notice);
+		
+		console.log("all_vn:" + values);
+		console.log("all_n:" + JSON.stringify(notice));
 		res.json(responseData);
 
 	});
@@ -151,7 +155,7 @@ module.exports = function(){
 		responseData.code = '0017';
 		responseData.message = '获得' + now + '的作业成功';
 
-		console.log(responseData);
+		console.log("t_h:" + responseData.homework);
 		res.json(responseData);
 	});
 
@@ -174,7 +178,7 @@ module.exports = function(){
 		responseData.code = '0018';
 		responseData.message = '获得' + now + '的通知成功';
 
-		console.log(responseData);
+		console.log("t_n:" + responseData.notice);
 		res.json(responseData);
 	});
 

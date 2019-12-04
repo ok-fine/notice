@@ -89,6 +89,59 @@ module.exports = function(){
         res.json(responseData);
     });
 
+    //修改用户的学号和姓名
+    router.get('/edit', async function(req, res){
+        var user_no = req.query.user_no;
+        var card_no = req.query.card_no;
+        var user_name = req.query.user_name;
+
+        console.log('user_no' + user_no);
+
+        var sql = 'UPDATE user_info SET card_no = ?, user_name = ? WHERE user_no = ?';
+        var values = [card_no, user_name, user_no];
+        responseData.data = await db.query(sql, values);
+
+        responseData.code = '0020';
+        responseData.message = '修改成功';
+
+        console.log(responseData);
+        res.json(responseData);
+    });
+
+    //设置为日间模式
+    router.get('/day', async function(req, res){
+        var user_no = req.query.user_no;
+
+        console.log('user_no' + user_no);
+
+        var sql = 'UPDATE user_info SET theme = \'日间\' WHERE user_no = ?';
+        var values = [user_no];
+        responseData.data = await db.query(sql, values);
+
+        responseData.code = '0022';
+        responseData.message = '设置日间模式成功';
+
+        console.log(responseData);
+        res.json(responseData);
+    });
+
+    //设置为夜间模式
+    router.get('/night', async function(req, res){
+        var user_no = req.query.user_no;
+
+        console.log('user_no' + user_no);
+
+        var sql = 'UPDATE user_info SET theme = \'夜间\' WHERE user_no = ?';
+        var values = [user_no];
+        responseData.data = await db.query(sql, values);
+
+        responseData.code = '0023';
+        responseData.message = '设置夜间模式成功';
+
+        console.log(responseData);
+        res.json(responseData);
+    });
+
     //http://localhost:8088/notice/user_info/feedbacks?user_no=1&publish_time=1&content=123
     //收集用户反馈
     router.get('/feedbacks', async function(req, res){

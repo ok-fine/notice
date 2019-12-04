@@ -24,7 +24,7 @@ module.exports = function(){
         var values = [association_no];
         var data = await db.query(sql, values);
 
-        if(data0.length == 0){
+        if(data.length == 0){
             responseData.message = '查无此群';
         }else{
             responseData.code = '0001';
@@ -39,6 +39,7 @@ module.exports = function(){
     router.get('/confirm', async function(req, res){
         var user_no = req.query.user_no;
         var association_no = req.query.association_no;
+        var now = req.query.now;
 
         var sql = 'SELECT * FROM members WHERE member_no = ? AND association_no = ?';
         var values = [user_no, association_no];
@@ -51,6 +52,22 @@ module.exports = function(){
 
             responseData.code = '0001';
             responseData.message = '插入成功';
+
+            //为该同学创建作业和通知列表
+            //选取该群聊下所有未解之的作业
+            var sql1 = 'INSERT INTO user_homeworks(user_no, homework_no) \
+                        SELECT user_no, homework_no FROM user_info, homeworks\
+                        WHERE association_no = ? AND DATE(end_time) > DATE(?)\
+                        AND user_no = ?';
+            var values1 = [association_no, now, user_no];
+            await db.query(sql1, values1);
+
+            var sql2 = 'INSERT INTO user_notices(user_no, notice_no) \
+                        SELECT user_no, notice_no FROM user_info, notices\
+                        WHERE association_no = ? AND DATE(end_time) > DATE(?)\
+                        AND user_no = ?';
+            var values2 = [association_no, now, user_no];
+            await db.query(sql2, values2);
 
         }else if(data[0].status == '已通过'){
             responseData.code = '0002';
