@@ -82,5 +82,36 @@ module.exports = function(){
         res.json(responseData);
     })
     
+    //退出群聊
+    router.get('/exit', async function(req, res){
+    	var user_no = req.query.user_no;
+        var association_no = req.query.association_no;
+        var if_admin = req.query.if_admin; //1-是管理员  0-不是管理员
+        
+        if(if_admin == '1'){
+        	var sql = 'DELETE FROM administrators WHERE admin_no = ? AND association_no = ?';
+        	var values = [user_no, association_no];
+        	await db.query(sql, values);
+        }
+        
+        var sql1 = 'DELETE FROM members WHERE member_no = ? AND association_no = ?';
+        var values1 = [user_no, association_no];
+        await db.query(sql1, values1);
+        
+        var sql2 = 'DELETE FROM user_homeworks WHERE user_no = ? AND \
+        			homework_no in (SELECT homework_no FROM homeworks WHERE association_no = ?)';
+        var values2 = [user_no, association_no];
+        await db.query(sql2, values2);
+        
+        var sql3 = 'DELETE FROM user_notices WHERE user_no = ? AND \
+        			notice_no in (SELECT notice_no FROM notices WHERE association_no = ?)';
+        var values3 = [user_no, association_no];
+        await db.query(sql3, values3);
+        
+        responseData.code = '0000';
+        responseData.message = '退出群聊成功';
+        res.json(responseData);
+    })
+    
     return router;
 }

@@ -42,7 +42,8 @@ module.exports = function(){
         var association_no = req.query.association_no;
         var notice_power = req.query.notice_power;
         var homework_power = req.query.homework_power;
-        responseData.data = [];
+        responseData.notice = [];
+        responseData.homework = [];
 
         //获取总人数
         var sql = 'SELECT COUNT(*) AS all_people FROM members \
@@ -104,19 +105,20 @@ module.exports = function(){
                     alreadyFinished = JSON.parse(alreadyFinished);
                     notices.data[j].alreadyFinished =alreadyFinished.already_finished;
 
-                    responseData.data.push(notices.data[j]);
+                    responseData.notice.push(notices.data[j]);
                 }
             }
-            if(responseData.data.length == 0){
+            if(responseData.notice.length == 0){
                 responseData.code = '0001';
                 responseData.message = '暂时没有任何通知';
             }else{
                 responseData.code = '0000';
                 responseData.message = '获取通知信息成功';
             }
-
+        }
+        
         //展示作业
-        }else if(homework_power == 1){
+        if(homework_power == 1){
             //选择所有不是创建者也不是该管理员的管理员, 并获得所有管理员数组
             sql1 = 'SELECT admin_no, creator_no FROM administrators \
                     WHERE admin_no<>? AND association_no=? \
@@ -166,10 +168,10 @@ module.exports = function(){
                     alreadyFinished = JSON.parse(alreadyFinished);
                     homeworks.data[j].alreadyFinished = alreadyFinished.already_finished;
 
-                    responseData.data.push(homeworks.data[j]);
+                    responseData.homework.push(homeworks.data[j]);
                 }
             }
-            if(responseData.data.length == 0){
+            if(responseData.homework.length == 0){
                 responseData.code = '0001';
                 responseData.message = '暂时没有任何作业';
             }else{
@@ -177,7 +179,6 @@ module.exports = function(){
                 responseData.message = '获取作业信息成功';
             }
         }
-        //console.log(responseData);
         res.json(responseData);
     })
 
@@ -187,21 +188,21 @@ module.exports = function(){
         var notice_power = req.query.notice_power;
         var homework_power = req.query.homework_power;
         var no = req.query.no;
+        responseData.imgUrl = [];
+        responseData.fileUrl = [];
 
         if(notice_power == 1){
             //获取通知信息详情
             var sql = 'SELECT * FROM notices WHERE notice_no = ?';
             var values = [no];
             var result = await db.query(sql, values);
-
+			
             if(result.length == 0){
                 responseData.code = 1;
                 responseData.message = '条目已不存在，请刷新';
-            }else if(result.img_count != 0 || result.file_count != 0){
+            }else if(result[0].img_count != 0 || result[0].file_count != 0){
                 responseData.code = 0;
                 responseData.message = '获取通知信息成功';
-                responseData.imgUrl = [];
-                responseData.fileUrl = [];
                 var filePath = '/home/ubuntu/notice/files/' + association_no 
                                 + '/notices/' + no + '/publish/';
                 if(fs.existsSync(filePath)){
@@ -231,15 +232,13 @@ module.exports = function(){
             var sql = 'SELECT * FROM homeworks WHERE homework_no=?';
             var values = [no];
             var result = await db.query(sql, values);
-
+            
             if(result.length == 0){
                 responseData.code = '0001';
                 responseData.message = '条目已不存在，请刷新';
-            }else if(result.img_count != 0 || result.file_count != 0){
+            }else if(result[0].img_count != 0 || result[0].file_count != 0){
                 responseData.code = '0000';
                 responseData.message = '获取作业信息成功';
-                responseData.imgUrl = [];
-                responseData.fileUrl = [];
                 var filePath = '/home/ubuntu/notice/files/' + association_no 
                                 + '/homeworks/' + no + '/publish/';
                 var files = findSync(filePath);

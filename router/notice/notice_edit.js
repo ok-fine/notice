@@ -41,19 +41,26 @@ module.exports = function(){
         var if_pub = req.body.if_pub;      //是否有新增图片 1-有，0-没有
         var img_count = req.body.img_count;//表示更改后的图片总数
         var hold = req.body.hold_img;      //存放没被删除的图片路径
-        var del = req.body.del_img;        //存放没被删除的图片路径
+        var del1 = req.body.del_img;       //存放被删除的图片路径
+        var del2 = req.body.del_file;	   //存放被删除的文件路径
 
         //获取图片增删列表
         if(hold == 'undefined'){
             var hold_img = [];
         }else{
-            var hold_img = hold.split(" "); 
+            var hold_img = hold.split("@@"); 
         }
 
-        if(del == 'undefined'){
+        if(del1 == 'undefined'){
             var del_img = [];
         }else{
-            var del_img = del.split(" ");
+            var del_img = del1.split("@@");
+        }
+        
+        if(del2 == 'undefined'){
+            var del_file = [];
+        }else{
+            var del_file = del2.split("@@");
         }
 
         //读取通知信息
@@ -136,6 +143,23 @@ module.exports = function(){
                     }
                 });
             }
+
+            //删除图片
+            for(var i = 0 ; i < del_img.length ; i++){
+                var path = del_img[i].substr(del_img[i].length - 9, 9);
+                var delPath = pubPath + path;
+                console.log("del_path" + delPath);
+                fs.unlinkSync(delPath);
+            }
+            
+            //删除文件
+            for(var i = 0; i < del_file.length ; i++){
+            	var path = del_file[i];
+            	var delPath = pubPath + path;
+            	console.log("del_path" + delPath);
+            	fs.unlinkSync(delPath);
+            }
+            
             //没有图片 没有文件 则删除publish文件夹
             if(fs.existsSync(pubPath) && img_count == 0 && file_count == 0){
                 deleteFolderFile(pubPath);
@@ -145,14 +169,6 @@ module.exports = function(){
                     res.json(responseData);
                     throw new Error('删除文件夹失败');
                 }
-            }
-
-            //删除图片
-            for(var i = 0 ; i < del_img.length ; i++){
-                var path = del_img[i].substr(del_img[i].length - 9, 9);
-                var delPath = pubPath + path;
-                console.log("del_path" + delPath);
-                fs.unlinkSync(delPath);
             }
 
             //将现有的图片按顺序重命名
@@ -175,7 +191,7 @@ module.exports = function(){
             }
 
             //更新通知文字信息
-            var sql1 = 'UPDATE notcies SET creator_no = ?, title = ?, content = ?, \
+            var sql1 = 'UPDATE notices SET creator_no = ?, title = ?, content = ?, \
                         publish_time = ?, end_time = ?, img_count = ?, file_count = ?,\
                         get_file = ?, method = ?, named = ? \
                         WHERE notice_no = ?'

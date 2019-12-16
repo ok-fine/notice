@@ -52,10 +52,10 @@ module.exports = function(){
     	var sql1 = 'UPDATE user_homeworks SET status = \'截止\' \
     				WHERE status <> \'截止\' AND ((\
     					is_personal = 1 AND homework_no = (\
-    					SELECT homework_no FROM personal_homeworks WHERE DATE(end_time) < DATE(?) )\
+    					SELECT homework_no FROM personal_homeworks WHERE unix_timestamp(end_time) < unix_timestamp(?) )\
     				) OR (\
     					is_personal = 0 AND homework_no = (\
-    					SELECT homework_no FROM homeworks WHERE DATE(end_time) < DATE(?) )\
+    					SELECT homework_no FROM homeworks WHERE unix_timestamp(end_time) < unix_timestamp(?) )\
     				))';
     	var values1 = [now, now];
     	console.log(values1);
@@ -68,10 +68,10 @@ module.exports = function(){
     	var sql2 = 'UPDATE user_notices SET status = \'截止\' \
     				WHERE status <> \'截止\' AND ((\
     					is_personal = 0 AND notice_no = (\
-    					SELECT notice_no FROM notices WHERE DATE(end_time) < DATE(?) )\
+    					SELECT notice_no FROM notices WHERE unix_timestamp(end_time) < unix_timestamp(?) )\
     				)OR (\
     					is_personal = 1 AND notice_no = (\
-    					SELECT notice_no FROM personal_notices WHERE DATE(end_time) < DATE(?) )\
+    					SELECT notice_no FROM personal_notices WHERE unix_timestamp(end_time) < unix_timestamp(?) )\
     				))';
     	var values2 = [now, now];
     	responseData.notice = await db.query(sql2, values2);
@@ -92,12 +92,12 @@ module.exports = function(){
 		//选出没有截止（end_time > now），没有标记完成属于这位同学的homework_no
 		//在对应的personal或总的homeworks中找到作业的标识（corse，title，publish_time，association_no
 		var sql = 'SELECT * FROM index_homeworks WHERE user_no = ? \
-					AND DATE(end_time) > DATE(?) \
+					AND unix_timestamp(end_time) > unix_timestamp(?) \
 					ORDER BY FIELD(status, \'完成\', \'截止\'), \
 					end_time ASC';
 		var values = [user_no, now];
 		var homework = await db.query(sql, values);
-		responseData.homework = homework;
+		responseData.a_homework = homework;
 
 		responseData.code = '0016';
 		responseData.message = '选取用户所有作业信息成功';
@@ -116,12 +116,12 @@ module.exports = function(){
 		//选出没有截止（end_time > now），没有标记完成属于这位同学的homework_no
 		//在对应的personal或总的homeworks中找到作业的标识（corse，title，publish_time，association_no
 		var sql = 'SELECT * FROM index_notices WHERE user_no = ? \
-					AND DATE(end_time) > DATE(?) \
+					AND unix_timestamp(end_time) > unix_timestamp(?) \
 					ORDER BY FIELD(status, \'完成\', \'截止\'), \
 					end_time ASC';
 		var values = [user_no, now];
 		var notice = await db.query(sql, values); 
-		responseData.notice = notice;
+		responseData.a_notice = notice;
 
 		responseData.code = '0017';
 		responseData.message = '选取用户所有通知信息成功';
@@ -144,13 +144,13 @@ module.exports = function(){
 		console.log(today_end);
 
 		//选取时间在今天的作业
-		var sql = 'SELECT * FROM index_homeworks WHERE DATE(end_time) >= DATE(?) \
-					AND DATE(end_time) <= DATE(?) AND user_no = ? \
+		var sql = 'SELECT * FROM index_homeworks WHERE unix_timestamp(end_time) >= unix_timestamp(?) \
+					AND unix_timestamp(end_time) <= unix_timestamp(?) AND user_no = ? \
 					ORDER BY FIELD(status, \'完成\', \'截止\'), \
 					end_time ASC';
-		var values = [user_no, today_begin, today_end];
-		responseData.homework = await db.query(sql, values);
-
+		var values = [today_begin, today_end, user_no];
+		var homework = await db.query(sql, values);
+		responseData.homework = homework;
 
 		responseData.code = '0017';
 		responseData.message = '获得' + now + '的作业成功';
@@ -168,12 +168,13 @@ module.exports = function(){
 		var today_end = now.substr(0, 10) + ' 23:59';
 
 		//选取时间在今天的作业
-		var sql = 'SELECT * FROM index_notices WHERE DATE(end_time) >= DATE(?) \
-					AND DATE(end_time) <= DATE(?) AND user_no = ? \
+		var sql = 'SELECT * FROM index_notices WHERE unix_timestamp(end_time) >= unix_timestamp(?) \
+					AND unix_timestamp(end_time) <= unix_timestamp(?) AND user_no = ? \
 					ORDER BY FIELD(status, \'完成\', \'截止\'), \
 					end_time ASC';
-		var values = [user_no, today_begin, today_end];
-		responseData.notice = await db.query(sql, values);
+		var values = [today_begin, today_end, user_no];
+		var notice = await db.query(sql, values);
+		responseData.notice = notice;
 
 		responseData.code = '0018';
 		responseData.message = '获得' + now + '的通知成功';

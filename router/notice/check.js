@@ -22,7 +22,7 @@ module.exports = function(){
         var sql1 = 'SELECT a.association_no, a.creator_no, \
                            a.introduction, a.duty, a.name, u.user_name, a.create_reason \
                     FROM association AS a, user_info AS u \
-                    WHERE a.admin_no =? AND a.creator_no=u.user_no AND a.status=\'审核中\' ';
+                    WHERE a.admin_no =? AND a.creator_no=u.user_no AND a.status=\'待审核\' ';
         values = [admin_no];
         responseData.waitcheck = await db.query(sql1, values);
 
@@ -52,10 +52,10 @@ module.exports = function(){
         var values3 = [creator_no, association_no, '创建人', '已通过'];
         await db.query(sql3, values3);
 
-        var sql2 = 'INSERT INTO administrators(admin_no, association_no, duty, \
+        var sql2 = 'INSERT INTO administrators(admin_no, association_no, creator_no, duty, \
                                                notice_power, homework_power, delete_power, admin_power) \
-                    VALUES(?, ?, ?, ?, ?, ?, ?)';
-        var values2 = [creator_no, association_no, duty, 1, 1, 1, 1];
+                    VALUES(?, ?, ?, ?, ?, ?, ?, ?)';
+        var values2 = [creator_no, association_no, creator_no, duty, 1, 1, 1, 1];
         await db.query(sql2, values2);
 
         responseData.code = '0001';
@@ -101,7 +101,8 @@ module.exports = function(){
 
     router.get('/refuse', async function(req,res){
         var association_no = req.query.association_no;
-
+        console.log("asso_no" + association_no);
+        
         var sql1 = 'DELETE FROM association WHERE association_no=?';
         var values = [association_no];
         await db.query(sql1, values);

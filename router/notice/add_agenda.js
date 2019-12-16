@@ -39,9 +39,9 @@ module.exports = function(){
 		responseData.data = await db.query(sql1, values1);
 
 		//将作业添加到用户的作业列表
-		var sql2 = 'INSERT INTO user_homeworks(user_no, homework_no, is_personal) \
-					VALUES(?, ?, ?)';
-		var values2 = [user_no, responseData.data[0].homework_no, 1];
+		var sql2 = 'INSERT INTO user_homeworks(user_no, homework_no, status, is_personal) \
+					VALUES(?, ?, ?, ?)';
+		var values2 = [user_no, responseData.data[0].homework_no, '已读', 1];
 		await db.query(sql2, values2);
 
 		responseData.code = '0001';
@@ -74,9 +74,9 @@ module.exports = function(){
 		responseData.data = await db.query(sql1, values1);
 
 		//将通知添加到用户的通知列表
-		var sql2 = 'INSERT INTO user_notices(user_no, notice_no, is_personal) \
+		var sql2 = 'INSERT INTO user_notices(user_no, notice_no, status, is_personal) \
 					VALUES(?, ?, ?)';
-		var values2 = [user_no, responseData.data[0].notice_no, 1];
+		var values2 = [user_no, responseData.data[0].notice_no, '已读', 1];
 		await db.query(sql2, values2);
 
 		responseData.code = '0002';
@@ -117,7 +117,7 @@ module.exports = function(){
 		var publish_time = req.query.publish_time;
 		var end_time = req.query.end_time;
 
-		var sql = 'UPDATE personal_homeworks SET title = ?, content = ?,\
+		var sql = 'UPDATE personal_notices SET title = ?, content = ?,\
 					publish_time = ?, end_time = ? WHERE notice_no = ?';
 		var values = [title, content, publish_time, end_time, notice_no];
 		await db.query(sql, values);

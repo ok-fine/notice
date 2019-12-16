@@ -71,14 +71,14 @@ module.exports = function(){
 
         //未完成的作业数量
         var sql3 = 'SELECT COUNT(*) AS unfinished FROM user_homeworks \
-                    WHERE user_no = ? AND if_finished = \'0\' AND status <> \'截止\'';
+                    WHERE user_no = ? AND status <> \'完成\' AND status <> \'截止\'';
         var values3 = [user_no];
         var num = await db.query(sql3, values3);
         responseData.homework.unfinished = num[0].unfinished;
 
         //未完成的通知数量
         sql3 = 'SELECT COUNT(*) AS unfinished FROM user_notices \
-                WHERE user_no = ? AND if_finished = \'0\' AND status <> \'截止\'';
+                WHERE user_no = ? AND status <> \'完成\' AND status <> \'截止\'';
         num = await db.query(sql3, values3);
         responseData.notice.unfinished = num[0].unfinished;
 

@@ -47,7 +47,7 @@ module.exports = function(){
         //得到群详情
         await assoInfo(association_no, user_no);
 
-        responseData.data = '0007';
+        responseData.code = '0007';
         responseData.message = '获取群简介成功';
 
         console.log(responseData);
@@ -66,9 +66,9 @@ module.exports = function(){
         var sql = 'SELECT * FROM administrators WHERE admin_no = ? AND association_no = ?';
         var values = [user_no, association_no];
         responseData.data = await db.query(sql, values);
-        
+        console.log(responseData.data);
         //设置管理员
-        //筛选用户可以管理的管理员列表（没有群主和自己）
+        //筛选用户可以管理的管理员列表(没有群主和自己)
         if(responseData.data[0].admin_power == '1'){
             var sql1 = 'SELECT u.user_name AS admin_name, m.member_no AS admin_no \
                         FROM members AS m, user_info AS u\
@@ -88,7 +88,7 @@ module.exports = function(){
             responseData.memberList = await db.query(sql2, values2);
         }
 
-        responseData.data = '0008';
+        responseData.code = '0008';
         responseData.message = '获取群简介成功';
 
         console.log(responseData);
@@ -101,15 +101,18 @@ module.exports = function(){
         var user_no = req.query.user_no;
 
         //先删除表administrator，再删除表members
-        var sql1 = 'DELETE FROM administrators WHERE association_no = ? AND user_no = ?';
+        var sql1 = 'DELETE FROM administrators WHERE association_no = ? AND admin_no = ?';
         var values1 = [association_no, user_no];
         await db.query(sql1, values1);
 
-        var sql2 = 'DELETE FROM members WHERE association_no = ? AND user_no = ?';
+        var sql2 = 'DELETE FROM members WHERE association_no = ? AND member_no = ?';
         var values2 = [association_no, user_no];
         await db.query(sql2, values2);
+        
+        //删除成员在群里的作业和通知
+        exit_asso(user_no, association_no);
 
-        responseData.data = '0009';
+        responseData.code = '0009';
         responseData.message = '删除管理员成功';
 
         console.log(responseData);
@@ -122,11 +125,14 @@ module.exports = function(){
         var user_no = req.query.user_no;
 
         //删除成员成功
-        var sql = 'DELETE FROM members WHERE association_no = ? AND user_no = ?';
+        var sql = 'DELETE FROM members WHERE association_no = ? AND member_no = ?';
         var values = [association_no, user_no];
         await db.query(sql, values);
+        
+        //删除成员在群里的作业和通知
+        exit_asso(user_no, association_no);
 
-        responseData.data = '0010';
+        responseData.code = '0010';
         responseData.message = '删除成员成功';
 
         console.log(responseData);
@@ -162,12 +168,24 @@ module.exports = function(){
         var values5 = [association_no];
         await db.query(sql5, values5);
 
-        responseData.data = '0011';
+        responseData.code = '0011';
         responseData.message = '群解散成功';
 
         console.log(responseData);
         res.json(responseData);
     });
+    
+    async function exit_asso(user_no, association_no){
+    	var sql = 'DELETE FROM user_homeworks WHERE user_no = ? AND is_personal = 0 AND \
+        			homework_no in (SELECT homework_no FROM homeworks WHERE association_no = ?)';
+        var values = [user_no, association_no];
+        await db.query(sql, values);
+        
+        var sql1 = 'DELETE FROM user_notices WHERE user_no = ? AND is_personal = 0 AND \
+        			notice_no in (SELECT notice_no FROM notices WHERE association_no = ?)';
+        var values1 = [user_no, association_no];
+        await db.query(sql1, values1);
+    }
 
     return router;
 }

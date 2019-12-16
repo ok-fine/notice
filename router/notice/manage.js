@@ -47,9 +47,9 @@ module.exports = function(){
         //如果有创建群聊的话显示该群聊的人员申请部分
         if(responseData.createData.length != 0){
             var sql3 = 'SELECT u.user_name, a.name AS association_name, u.user_no, \
-                        a.association_no\
-                        FROM user_info AS u, members AS m, association AS a\
-                        WHERE m.association_no = a.association_no AND a.association_no = ?\
+                        a.association_no \
+                        FROM user_info AS u, members AS m, association AS a \
+                        WHERE m.association_no = a.association_no AND a.association_no = ? \
                         AND u.user_no = m.member_no AND m.status = \'待审核\'';
             var values3 = [];
             var waitCheck = new Array(responseData.createData.length);

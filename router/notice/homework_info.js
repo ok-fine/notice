@@ -22,7 +22,7 @@ module.exports = function(){
         var user_no = req.query.user_no;
         var is_personal = req.query.is_personal;
         if(is_personal == 0){
-            var sql1 = 'SELECT h.association_no, h.title, u.user_name, h.content, h.end_time, h.method, h.course\
+            var sql1 = 'SELECT h.association_no, h.title, u.user_name, h.content, h.end_time, h.method, h.course, h.get_file\
                     FROM homeworks AS h, user_info AS u\
                     WHERE h.homework_no=? AND h.creator_no=u.user_no';
             var values1 = [homework_no];
@@ -41,10 +41,11 @@ module.exports = function(){
                 var data = await db.query(sql, values);
                 var img_count = data[0].img_count;
                 var file_count = data[0].file_count;
-            if(img_count != null || file_count != null){
                 var imgs = [];
                 var files = [];
                 var allfiles = [];
+            if(img_count != 0 || file_count != 0){
+                
                 var file_path = pathLib.join(__dirname,'../../files') + '\/' 
                                 + association_no + '\/' + 'homeworks' + '\/' 
                                 + homework_no + '\/' + 'publish';
@@ -52,19 +53,19 @@ module.exports = function(){
                 console.log('allfiles: ' + allfiles);
                 for(var i = 0; i < img_count + file_count; i++){
                     if(allfiles[i].indexOf("_img") != -1){
-                        imgs.push('http://132.232.81.249:81/files/' + responseData.data[0].association_no + '/' + 'homeworks/' + homework_no + '/' + 'publish/' + pathLib.basename(allfiles[i]));
+                        imgs.push('http://106.53.3.150:88/files/' + responseData.data[0].association_no + '/' + 'homeworks/' + homework_no + '/' + 'publish/' + pathLib.basename(allfiles[i]));
                     }else{
-                        files.push('http://132.232.81.249:81/files/' + responseData.data[0].association_no + '/' + 'homeworks/' + homework_no + '/' + 'publish/' + pathLib.basename(allfiles[i]));
+                        files.push('http://106.53.3.150:88/files/' + responseData.data[0].association_no + '/' + 'homeworks/' + homework_no + '/' + 'publish/' + pathLib.basename(allfiles[i]));
                     }
                 }
-                console.log('imgs:' + imgs);
-                console.log('files:' + files);
-                responseData.images = {
-                    Img: imgs
-                }
-                responseData.files = {
-                    Files: files
-                }
+            }
+            console.log('imgs:' + imgs);
+            console.log('files:' + files);
+            responseData.images = {
+                Img: imgs
+            }
+            responseData.files = {
+                Files: files
             }
         }else if(is_personal == 1){
             var sql1 = 'SELECT title, course, content, publish_time, end_time\
@@ -81,7 +82,7 @@ module.exports = function(){
             }
         }
 
-        var sql2 = 'UPDATE user_homeworks SET status=\'已读\', hurry=\'0\', modify=\'0\' WHERE user_no=? AND homework_no=? AND is_personal=?';
+        var sql2 = 'UPDATE user_homeworks SET status=\'已读\', hurry=\'0\', modify=\'0\' WHERE user_no=? AND homework_no=? AND is_personal=? AND status = \'未读\'';
         var values2 = [user_no, homework_no, is_personal];
         await db.query(sql2, values2);
 

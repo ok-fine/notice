@@ -21,7 +21,7 @@ module.exports = function(){
         var user_no = req.query.user_no;
         var is_personal = req.query.is_personal;
         if(is_personal == 0){
-            var sql1 = 'SELECT n.association_no, n.title, u.user_name, n.content, n.end_time, n.method\
+            var sql1 = 'SELECT n.association_no, n.title, u.user_name, n.content, n.end_time, n.method, n.get_file\
                     FROM notices AS n, user_info AS u\
                     WHERE n.notice_no=? AND n.creator_no=u.user_no';
             var values1 = [notice_no];
@@ -40,10 +40,11 @@ module.exports = function(){
                 var data = await db.query(sql, values);
                 var img_count = data[0].img_count;
                 var file_count = data[0].file_count;
-            if(img_count != null || file_count != null){
                 var imgs = [];
                 var files = [];
                 var allfiles = [];
+            if(img_count != 0 || file_count != 0){
+
                 var file_path = pathLib.join(__dirname,'../../files') + '\/' 
                                 + association_no + '\/' + 'notices' + '\/' 
                                 + notice_no + '\/' + 'publish';
@@ -51,17 +52,17 @@ module.exports = function(){
 
                 for(var i = 0; i < img_count + file_count; i++){
                     if(allfiles[i].indexOf("_img") != -1){
-                        imgs.push('http://132.232.81.249:81/files/' + responseData.data[0].association_no + '/' + 'notices/' + notice_no + '/' + 'publish/'+ pathLib.basename(allfiles[i]));
+                        imgs.push('http://106.53.3.150:88/files/' + responseData.data[0].association_no + '/' + 'notices/' + notice_no + '/' + 'publish/'+ pathLib.basename(allfiles[i]));
                     }else{
-                        files.push('http://132.232.81.249:81/files/' + responseData.data[0].association_no + '/' + 'notices/' + notice_no + '/' + 'publish/' + pathLib.basename(allfiles[i]));
+                        files.push('http://106.53.3.150:88/files/' + responseData.data[0].association_no + '/' + 'notices/' + notice_no + '/' + 'publish/' + pathLib.basename(allfiles[i]));
                     }
                 }
-                responseData.images = {
-                    Img: imgs
-                }
-                responseData.files = {
-                    Files: files
-                }
+            }
+            responseData.images = {
+                Img: imgs
+            }
+            responseData.files = {
+                Files: files
             }
         }else if(is_personal == 1){
             var sql1 = 'SELECT title, content, publish_time, end_time\
@@ -78,7 +79,7 @@ module.exports = function(){
             }
         }
 
-        sql2 = 'UPDATE user_notices SET status=\'已读\', hurry=\'0\', modify=\'0\' WHERE user_no=? AND notice_no=? AND is_personal=?';
+        sql2 = 'UPDATE user_notices SET status=\'已读\', hurry=\'0\', modify=\'0\' WHERE user_no=? AND notice_no=? AND is_personal=? AND status = \'未读\'';
         values2 = [user_no, notice_no, is_personal];
         await db.query(sql2, values2);
 
